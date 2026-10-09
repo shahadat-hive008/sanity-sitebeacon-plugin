@@ -1,0 +1,19 @@
+{
+  "name": "sitebeacon-sanity",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Monorepo root for the Sitebeacon Analysis Sanity Studio plugin and its development Studio",
+  "scripts": {
+    "build": "pnpm --filter sanity-plugin-sitebeacon build",
+    "build:studio": "pnpm --filter sitebeacon-dev-studio build",
+    "dev": "pnpm --filter sitebeacon-dev-studio dev",
+    "dev:plugin": "pnpm --filter sanity-plugin-sitebeacon watch",
+    "format": "pnpm --filter sanity-plugin-sitebeacon format",
+    "lint": "pnpm --filter sanity-plugin-sitebeacon lint",
+    "typecheck": "pnpm --recursive --no-bail typecheck",
+    "verify": "pnpm --filter sanity-plugin-sitebeacon verify-package"
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}
