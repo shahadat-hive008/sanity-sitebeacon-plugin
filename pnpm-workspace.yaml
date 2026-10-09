@@ -1,3 +1,9 @@
 packages:
   - sanity-plugin-sitebeacon
   - sitebeacon-dev-studio
+
+# pnpm v10 blocks dependency lifecycle scripts by default. esbuild ships a
+# postinstall that links its platform binary, which @sanity/pkg-utils needs in
+# order to build the plugin.
+onlyBuiltDependencies:
+  - esbuild

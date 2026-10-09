@@ -11,7 +11,7 @@
     "format": "pnpm --filter sanity-plugin-sitebeacon format",
     "lint": "pnpm --filter sanity-plugin-sitebeacon lint",
     "typecheck": "pnpm --recursive --no-bail typecheck",
-    "verify": "pnpm --filter sanity-plugin-sitebeacon verify-package"
+    "verify": "pnpm --filter sanity-plugin-sitebeacon verify"
   },
   "engines": {
     "node": ">=20.19 <22 || >=22.12"
