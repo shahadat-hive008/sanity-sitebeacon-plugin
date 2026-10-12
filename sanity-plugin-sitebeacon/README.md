@@ -351,18 +351,6 @@ environment variable read at build time, is shipped to the browser.
   CORS"_). A Studio tool cannot call it directly from the browser and will need
   the same treatment.
 
----
-
-## 10. Roadmap
-
-1. Report detail view, carrying lab and field metrics and the resource breakdown.
-2. A test runner (vitest) with coverage for formatting, mapping, sorting and the
-   provider.
-3. Real API provider, once authentication, CORS and hosting decisions are made.
-
-Pagination is deliberately not on this list. The endpoint returns every URL at
-once, so it could only ever be a client-side view concern - worth adding if a
-leaderboard grows large enough to need it, but not before. See the note above.
 
 ---
 
