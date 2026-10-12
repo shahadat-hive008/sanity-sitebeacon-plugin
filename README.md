@@ -100,9 +100,11 @@ cd sanity-plugin-sitebeacon && npm publish
 
 The plugin runs entirely on mock data. Nothing in it calls the real Sitebeacon
 API yet, and the dashboard is not complete — the detail view, lab and field
-metrics (FCP/INP/CLS), the resource breakdown and pagination are still to come.
-The plugin README's **Status** and **Data Contract** sections list exactly what
-is verified and what is outstanding.
+metrics (FCP/INP/CLS) and the resource breakdown are still to come. Pagination is
+not implemented and is not planned: the endpoint returns every URL in a single
+response, so it could only ever be a client-side view concern. The plugin README's
+**Status** and **Data Contract** sections list exactly what is verified and what is
+outstanding.
 
 There is also **no test runner** in the workspace. `typecheck`, `lint` and
 `build` pass; automated tests do not exist.
@@ -112,7 +114,6 @@ There is also **no test runner** in the workspace. `typecheck`, `lint` and
 These repositories are sources of ideas, not code to copy. Compatibility,
 licensing and relevance must be checked before reusing anything from them.
 
-- [Payload Sitebeacon plugin template](https://github.com/siam-lh/Payload-Sitebeacon-Plugin-Template)
 - [sanity-lighthouse-plugin](https://github.com/Halo-Lab/sanity-lighthouse-plugin)
 - [Developing Sanity plugins](https://www.sanity.io/docs/studio/developing-plugins)
 - [Sanity custom Studio tools](https://www.sanity.io/docs/studio/custom-studio-tool)

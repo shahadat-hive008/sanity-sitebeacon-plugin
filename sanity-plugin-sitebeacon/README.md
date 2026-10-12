@@ -311,21 +311,23 @@ with default configuration for build and watch scripts. See
 | Lab and field metrics                 | **Not surfaced yet** — present in the contract, not rendered            |
 | Resources and accessibility breakdown | **Not surfaced yet** — the table shows the violation total only         |
 | Report detail view                    | **Not built** — listing only                                            |
-| Pagination                            | **Not built** — the reference does it client-side; see below            |
+| Pagination                            | **Not implemented** — the endpoint returns every URL in one response     |
 | Automated tests                       | **None** — no runner configured. Lint, typecheck and build pass         |
 
-### Pagination note
+### Pagination
 
-The leaderboard endpoint returns every URL in one response, so pagination must be
-client-side. It belongs **after** filtering and sorting:
+**Not implemented.** The table renders every row that survives filtering and
+sorting.
+
+The endpoint returns the whole leaderboard in one response and accepts no `page`
+or `limit` parameter, so there is nothing to page over at the API level. Paging
+would have to be done client-side, slicing the list **after** filtering and
+sorting so the page count reflects what is actually visible:
 
 ```
-filter → sort → paginate → render
+filter → sort → slice → render
 ```
 
-The Payload reference implementation paginates on the server but filters on the
-client, so its summary counts and search only ever cover the visible page. That
-ordering is deliberately not copied.
 
 ---
 
@@ -347,10 +349,13 @@ environment variable read at build time, is shipped to the browser.
 ## 10. Roadmap
 
 1. Report detail view, carrying lab and field metrics and the resource breakdown.
-2. Client-side pagination.
-3. A test runner (vitest) with coverage for formatting, mapping, sorting and the
+2. A test runner (vitest) with coverage for formatting, mapping, sorting and the
    provider.
-4. Real API provider, once authentication, CORS and hosting decisions are made.
+3. Real API provider, once authentication, CORS and hosting decisions are made.
+
+Pagination is deliberately not on this list. The endpoint returns every URL at
+once, so it could only ever be a client-side view concern - worth adding if a
+leaderboard grows large enough to need it, but not before. See the note above.
 
 ---
 
