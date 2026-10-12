@@ -90,7 +90,7 @@ flowchart TD
 | `src/index.ts`                     | Plugin entry point. `definePlugin` registers the `sitebeacon-analysis` tool.                                                                                                                                                                                                                  |
 | `src/tool/SitebeaconTool.tsx`      | The Studio tool: fetch state, filter/sort state, and the loading / empty / no-results / error branches.                                                                                                                                                                                       |
 | `src/types/index.ts`               | The API contract. `SitebeaconResponse`, `Leaderboard`, `UrlReport`, `DeviceReport`, `Metrics`, `Resource`, `AccessibilitySummary`, plus `DeviceStrategy`, `CwvAssessment`, `ResourceType`.                                                                                                    |
-| `src/services/getLeaderboard.ts`   | Data access. `getLeaderboard()` returns the raw API envelope; `getUrlReport(id)` returns one report. The real API replaces this file only.                                                                                                                                                    |
+| `src/services/getLeaderboard.ts`   | Data access. `getLeaderboard()` returns the raw API envelope. The real API replaces this file only.                                                                                                                                                                                           |
 | `src/mock/mockLeaderboard.ts`      | Fixtures. Four responses — `mixed`, `completed`, `empty`, `error` — exported as `mockResponses`.                                                                                                                                                                                              |
 | `src/utils/format.ts`              | Formatting and missing-data helpers: `NOT_MEASURED`, `normalizeStatus`, `formatValue`, `formatCarbon`, `formatKilobytes`, `formatEnergy`, `formatBytes`, `formatUrlLabel`, `getCarbonTone`, `getCarbonRating`, `getCwvLabel`, `getDevice`, `getMetric`, `compareNullable`, `sumTransferSize`. |
 | `src/utils/reports.ts`             | Pure list logic: `sortValue`, `sortReports`, `filterReports`. No JSX.                                                                                                                                                                                                                         |
@@ -272,7 +272,15 @@ await getLeaderboard({fixture: 'empty'}) // no URLs submitted
 await getLeaderboard({fixture: 'error'}) // leaderboard is null
 ```
 
-`getUrlReport(urlReportId)` returns a single report, or `null`.
+To read one report, look it up in the list rather than requesting it again.
+`GET /leaderboards/{id}` returns every URL at once, so a per-report fetch would
+download the whole leaderboard a second time:
+
+```ts
+import {findReport} from './utils/reports'
+
+const report = findReport(leaderboard.items, urlReportId) // UrlReport | null
+```
 
 ---
 
@@ -311,7 +319,7 @@ with default configuration for build and watch scripts. See
 | Lab and field metrics                 | **Not surfaced yet** — present in the contract, not rendered            |
 | Resources and accessibility breakdown | **Not surfaced yet** — the table shows the violation total only         |
 | Report detail view                    | **Not built** — listing only                                            |
-| Pagination                            | **Not implemented** — the endpoint returns every URL in one response     |
+| Pagination                            | **Not implemented** — the endpoint returns every URL in one response    |
 | Automated tests                       | **None** — no runner configured. Lint, typecheck and build pass         |
 
 ### Pagination
@@ -327,7 +335,6 @@ sorting so the page count reflects what is actually visible:
 ```
 filter → sort → slice → render
 ```
-
 
 ---
 

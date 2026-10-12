@@ -108,3 +108,17 @@ export function filterReports(
     )
   })
 }
+
+/**
+ * Look up one report by its id.
+ *
+ * A pure selector rather than a fetch. `GET /leaderboards/{id}` returns every
+ * URL at once, so there is no per-report request to make - asking the API for one
+ * report would mean downloading the whole leaderboard again. Callers select from
+ * the list they already hold.
+ *
+ * Returns null when no report has that id.
+ */
+export function findReport(items: UrlReport[], urlReportId: string): UrlReport | null {
+  return items.find((item) => item.url_report_id === urlReportId) ?? null
+}

@@ -1,6 +1,6 @@
 import {mockResponses} from '../mock/mockLeaderboard'
 import type {MockFixtureName} from '../mock/mockLeaderboard'
-import type {SitebeaconResponse, UrlReport} from '../types'
+import type {SitebeaconResponse} from '../types'
 
 export interface GetLeaderboardOptions {
   /**
@@ -19,6 +19,11 @@ export interface GetLeaderboardOptions {
  * Returns the raw API envelope: `leaderboard` is null when something went
  * wrong, and `error_message` says why. Callers check `error_message` to decide
  * between an error state and an empty state.
+ *
+ * There is deliberately no single-report fetch alongside this. The endpoint
+ * returns every URL in one response, so a second request for one report would
+ * download the leaderboard again. Look reports up in the returned list with
+ * `findReport` from `utils/reports` instead.
  */
 export async function getLeaderboard(
   options: GetLeaderboardOptions = {},
@@ -32,23 +37,4 @@ export async function getLeaderboard(
   //   const response = await fetch('<real api url>')
   //   return response.json()
   return mockResponses[fixture]
-}
-
-/**
- * Fetch one URL report by its report id. Returns null when there is no report
- * with that id.
- */
-export async function getUrlReport(
-  urlReportId: string,
-  options: GetLeaderboardOptions = {},
-): Promise<UrlReport | null> {
-  const {fixture = 'mixed', latencyMs = 300} = options
-
-  const response = await getLeaderboard({fixture, latencyMs})
-
-  if (!response.leaderboard) {
-    return null
-  }
-
-  return response.leaderboard.items.find((item) => item.url_report_id === urlReportId) ?? null
 }
