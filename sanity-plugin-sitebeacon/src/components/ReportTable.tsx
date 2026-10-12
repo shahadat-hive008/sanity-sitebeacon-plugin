@@ -31,7 +31,7 @@ const VISUALLY_HIDDEN = {
  * size (`Text size={1}` is 0.8125rem). Do not set a font-size on the `<table>`:
  * `rem` is root-relative, so it would be silently ignored by every cell.
  */
-const CELL_PADDING = '8px 10px'
+const CELL_PADDING = '10px 16px'
 
 /**
  * The report listing. Columns come from `reportColumns`, so this component only
