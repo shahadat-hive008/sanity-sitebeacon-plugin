@@ -40,8 +40,7 @@ Analysis** in the Studio navigation.
 ### Core highlights
 
 - **Mock-first.** The dashboard runs entirely against local fixtures. No network
-  call is made, so the UI can be built and reviewed before the API contract,
-  authentication and CORS behaviour are settled.
+  call is made, so the UI can be built and reviewed on its own.
 - **Data access is isolated.** Nothing in `src/components/` imports the mock.
   Components take props; `src/services/` is the single place data enters.
 - **Missing data is never zero.** Every measured value is nullable, and a queued
@@ -63,15 +62,15 @@ Sanity Studio tool  (SitebeaconTool)
                 │
         services/getLeaderboard.ts     ← the only data entry point
                 │
-        mock/mockLeaderboard.ts        ← today
-        real Sitebeacon API            ← later, behind the same function
+        mock/mockLeaderboard.ts        ← today, the only data source
+        another data source            ← later, behind the same function
 ```
 
 ```mermaid
 flowchart TD
     A[SitebeaconTool] -->|getLeaderboard| B[services/getLeaderboard.ts]
-    B -->|mock today| C[mock/mockLeaderboard.ts]
-    B -.->|later| D[Sitebeacon API via proxy]
+    B -->|today| C[mock/mockLeaderboard.ts]
+    B -.->|later| D[another data source]
     A --> E[filterReports / sortReports]
     A --> F[ReportTable]
     F --> G[reportColumns]
@@ -89,8 +88,8 @@ flowchart TD
 | :--------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/index.ts`                     | Plugin entry point. `definePlugin` registers the `sitebeacon-analysis` tool.                                                                                                                                                                                                                  |
 | `src/tool/SitebeaconTool.tsx`      | The Studio tool: fetch state, filter/sort state, and the loading / empty / no-results / error branches.                                                                                                                                                                                       |
-| `src/types/index.ts`               | The API contract. `SitebeaconResponse`, `Leaderboard`, `UrlReport`, `DeviceReport`, `Metrics`, `Resource`, `AccessibilitySummary`, plus `DeviceStrategy`, `CwvAssessment`, `ResourceType`.                                                                                                    |
-| `src/services/getLeaderboard.ts`   | Data access. `getLeaderboard()` returns the raw API envelope. The real API replaces this file only.                                                                                                                                                                                           |
+| `src/types/index.ts`               | The data contract. `SitebeaconResponse`, `Leaderboard`, `UrlReport`, `DeviceReport`, `Metrics`, `Resource`, `AccessibilitySummary`, plus `DeviceStrategy`, `CwvAssessment`, `ResourceType`.                                                                                                   |
+| `src/services/getLeaderboard.ts`   | Data access. `getLeaderboard()` returns the response envelope. Another data source replaces this file only.                                                                                                                                                                                           |
 | `src/mock/mockLeaderboard.ts`      | Fixtures. Four responses — `mixed`, `completed`, `empty`, `error` — exported as `mockResponses`.                                                                                                                                                                                              |
 | `src/utils/format.ts`              | Formatting and missing-data helpers: `NOT_MEASURED`, `normalizeStatus`, `formatValue`, `formatCarbon`, `formatKilobytes`, `formatEnergy`, `formatBytes`, `formatUrlLabel`, `getCarbonTone`, `getCarbonRating`, `getCwvLabel`, `getDevice`, `getMetric`, `compareNullable`, `sumTransferSize`. |
 | `src/utils/reports.ts`             | Pure list logic: `sortValue`, `sortReports`, `filterReports`. No JSX.                                                                                                                                                                                                                         |
@@ -120,20 +119,16 @@ flowchart TD
 
 ## 5. Data Contract
 
-**Verified against a real API response** (`2026-07-06`), cross-checked against
-`lemonhive-nextjs/src/sections/siteiq-lead-table/interface.ts`, which is the only
-code in these repositories that consumes this endpoint.
+This is **this plugin's own contract**, declared in `src/types/index.ts`. There is
+no Sitebeacon API wired up: `getLeaderboard()` reads fixtures from
+`src/mock/mockLeaderboard.ts` and nothing else. The types describe what the
+dashboard is allowed to render, so they stay the single boundary between "data
+we have" and "components that draw it".
 
-### Endpoint
+If a real source is added later, it is added behind `getLeaderboard()` and must
+satisfy the types below — no component changes.
 
-```
-GET {baseUrl}/api/v1/leaderboards/{id}
-```
-
-No `Authorization` header. No pagination parameters — the response contains the
-entire leaderboard.
-
-### Response shape
+### The shape
 
 ```ts
 SitebeaconResponse {
@@ -175,12 +170,12 @@ AccessibilitySummary {
 }
 ```
 
-### Three details the naive reading gets wrong
+### Three details that are easy to misread
 
-All three are confirmed by the real response, not inferred:
+These are encoded in the types and fixtures on purpose — do not simplify them:
 
 1. **`cwv_assessment` is `'Passed' | 'Failed' | 'N/A'`.** `'N/A'` is a real
-   value the API returns, distinct from a device that was never scanned.
+   value, distinct from a device that was never scanned (`desktop: null`).
 2. **`severity_counts` omits keys whose count is zero.** A device with no
    critical issues has no `critical` key at all, so all four keys are optional.
 3. **`field_metrics` is a full `Metrics` object or `null`** — not a reduced
@@ -199,16 +194,16 @@ All three are confirmed by the real response, not inferred:
 | `cls`                                                                      | unitless     |
 | `perf`, `acs`, `seo`, `bp`                                                 | 0-100        |
 
-### Verified invariants
+### Invariants the fixtures preserve
 
-Two relationships hold on every device in the real response, and the fixtures are
-built to preserve them:
+Two relationships hold on every device in the fixture data, and the code relies
+on them:
 
 - `sum(severity_counts) === violation_count`
 - `carbon_emission === sum(resources) - resources[third-party]`
 
 Third-party carbon is reported but excluded from the page total. Summing every
-resource to reproduce `carbon_emission` therefore overshoots by roughly 40%.
+resource to reproduce `carbon_emission` therefore overshoots.
 
 ### URL-level and device-level figures do not reconcile
 
@@ -225,7 +220,7 @@ other.
 | :--------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
 | accessibility **score** per device | No such field. `DeviceReport` returns `perf`, `acs`, `seo`, `bp`; accessibility is reported as issue **counts** |
 | a `weight`/`severity` field        | Not present; severity only exists as `severity_counts`                                                          |
-| pagination metadata                | The endpoint returns everything in one response                                                                 |
+| pagination metadata                | `getLeaderboard()` returns the whole leaderboard at once                                                         |
 
 ### Missing data is never zero
 
@@ -236,7 +231,7 @@ Every measured value is nullable, and `null` is rendered as `--`:
   unscanned device or failed scan into `NotMeasured`.
 - Lighthouse scores render as plain text; **carbon is the only colour-coded
   metric** (`getCarbonTone`: < 0.493 g good, < 0.656 g caution, else critical),
-  matching the banding used upstream.
+  matching the banding used in `getCarbonTone`.
 - `compareNullable()` sorts `null` last **in both directions**, so an unmeasured
   URL can never top the table.
 - `normalizeStatus()` lowercases before comparing, because `status` is a
@@ -246,9 +241,9 @@ Every measured value is nullable, and `null` is rendered as `--`:
 
 ## 6. Mock Data
 
-`src/mock/mockLeaderboard.ts` holds seven URLs. `/` is copied verbatim from the
-real response — the ids, microsecond timestamps, 16-decimal floats,
-`cwv_assessment: 'N/A'` on mobile and a desktop `severity_counts` with no
+`src/mock/mockLeaderboard.ts` holds seven URLs covering every scan state. `/`
+carries the awkward cases on purpose: microsecond timestamps, long floats,
+`cwv_assessment: 'N/A'` on mobile, and a desktop `severity_counts` with no
 `critical` key. The rest are invented but hold the same shape.
 
 | URL                                   | Status     | Exercises                          |
@@ -272,9 +267,9 @@ await getLeaderboard({fixture: 'empty'}) // no URLs submitted
 await getLeaderboard({fixture: 'error'}) // leaderboard is null
 ```
 
-To read one report, look it up in the list rather than requesting it again.
-`GET /leaderboards/{id}` returns every URL at once, so a per-report fetch would
-download the whole leaderboard a second time:
+To read one report, look it up in the list rather than fetching it separately.
+`getLeaderboard()` returns every URL at once, so a per-report request would
+re-fetch the whole leaderboard:
 
 ```ts
 import {findReport} from './utils/reports'
@@ -312,14 +307,14 @@ with default configuration for build and watch scripts. See
 
 | Area                                  | State                                                                   |
 | :------------------------------------ | :---------------------------------------------------------------------- |
-| Data contract                         | Verified against a real API response                                    |
+| Data contract                         | Defined in `src/types/index.ts`, fixture-backed                          |
 | Mock provider                         | Complete, seven URLs across every scan state                            |
 | Report listing                        | Complete — table, search, status filter, sort, refresh                  |
 | Desktop/mobile                        | Device **toggle** (one device at a time), not a side-by-side comparison |
 | Lab and field metrics                 | **Not surfaced yet** — present in the contract, not rendered            |
 | Resources and accessibility breakdown | **Not surfaced yet** — the table shows the violation total only         |
 | Report detail view                    | **Not built** — listing only                                            |
-| Pagination                            | **Not implemented** — the endpoint returns every URL in one response    |
+| Pagination                            | **Not implemented** — one response holds every URL                      |
 | Automated tests                       | **None** — no runner configured. Lint, typecheck and build pass         |
 
 ### Pagination
@@ -327,10 +322,10 @@ with default configuration for build and watch scripts. See
 **Not implemented.** The table renders every row that survives filtering and
 sorting.
 
-The endpoint returns the whole leaderboard in one response and accepts no `page`
-or `limit` parameter, so there is nothing to page over at the API level. Paging
-would have to be done client-side, slicing the list **after** filtering and
-sorting so the page count reflects what is actually visible:
+`getLeaderboard()` returns the whole leaderboard in a single response, so there
+is nothing to page over at the data level. Paging would have to be done
+client-side, slicing the list **after** filtering and sorting so the page count
+reflects what is actually visible:
 
 ```
 filter → sort → slice → render
@@ -343,16 +338,16 @@ filter → sort → slice → render
 Sanity Studio is a client-side application. Anything in this package, or in any
 environment variable read at build time, is shipped to the browser.
 
-- The leaderboard endpoint requires **no credential**, so nothing secret is held.
-- **Do not add an API key to this package or to `sanity.config.ts`.** If the real
-  integration needs a credential, put it behind a proxy.
-- The endpoint is **CORS-blocked for browsers** — the reference application
-  proxies it through its own origin (`next.config.js`, comment: _"Proxy to avoid
-  CORS"_). A Studio tool cannot call it directly from the browser and will need
-  the same treatment.
-
+- Nothing secret is held today: the dashboard reads local fixtures and makes no
+  network request.
+- **Do not add an API key to this package or to `sanity.config.ts`.** Anything
+  added there is readable in the browser.
+- If a real data source later needs a credential, it must be called through a
+  server-side proxy. Studio cannot hold a secret.
 
 ---
+
+
 
 ## License
 

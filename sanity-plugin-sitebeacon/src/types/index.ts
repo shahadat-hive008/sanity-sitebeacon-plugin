@@ -1,10 +1,13 @@
 /**
  * The Sitebeacon leaderboard contract.
  *
- * Verified against a real API response (2026-07-06). Field names and shapes are
- * reproduced exactly as the API returns them - do not "tidy" them.
+ * This is the shape the dashboard renders against, declared here and backed by
+ * the fixtures in `src/mock/mockLeaderboard.ts`. There is no Sitebeacon API
+ * wired up; if one is added later it goes behind `getLeaderboard()` and must
+ * satisfy these types. Field names and shapes are kept as-is - do not "tidy"
+ * them.
  *
- * Three things the naive reading gets wrong, all confirmed by real data:
+ * Three things that are easy to misread, encoded deliberately in the fixtures:
  *
  *  - `cwv_assessment` is 'Passed' | 'Failed' | 'N/A'. "N/A" is a real value,
  *    not a stand-in for missing data.
@@ -13,7 +16,7 @@
  *  - `field_metrics` is a full metrics object or null. It is not a reduced
  *    field-only shape, and individual values inside it can still be null.
  *
- * Note the two data sources that do not reconcile, confirmed by real numbers:
+ * Note the two data sources that do not reconcile, as the numbers show:
  *
  *  - URL-level `average_carbon_emission` / `average_energy` /
  *    `kilobytes_transferred` are historical aggregates across page views.
@@ -27,8 +30,8 @@ export type DeviceStrategy = 'desktop' | 'mobile'
 
 export type CwvAssessment = 'Passed' | 'Failed' | 'N/A'
 
-/** Observed values. The API is not documented as closed, so keep this a union
- * of what has been seen rather than a hard enum. */
+/** Values the fixtures contain. Kept open so an unknown value cannot break
+ * rendering. */
 export type ResourceType =
   | 'image'
   | 'script'
@@ -39,7 +42,7 @@ export type ResourceType =
   | 'media'
   | 'third-party'
 
-/** What the API returns. On failure, leaderboard is null and error_message says why. */
+/** The response envelope. On failure, leaderboard is null and error_message says why. */
 export interface SitebeaconResponse {
   leaderboard: Leaderboard | null
   error_message: string | null
